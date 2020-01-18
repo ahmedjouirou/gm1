@@ -24,6 +24,8 @@ var g_floor_y = 500;
 var fks = []
 var gravity;
 
+var gLastShot = 0;
+
 function hslToRgb(h, s, l, alpha){
     var r, g, b;
 
@@ -169,12 +171,16 @@ function spawn_bucket(){
 function draw() {
   // I could ask for everything in the world
   // var bodies = Composite.allBodies(engine.world);
+  if(frameRate() != 0){
+  gLastShot += (1/frameRate());  
 
+  }
+  //console.log(gLastShot)
   background(51);
 
   fill(color(255,255,0));textAlign(LEFT, TOP);
   textSize(20)
-  text("B:001",20,10);
+  text("B:002",20,10);
 
   fill(color(255,255,0));textAlign(LEFT, TOP);
   textSize(40)
@@ -360,6 +366,9 @@ function draw() {
 
 //function mousePressed() {
 function touchStarted() {
+  if(gLastShot <= 0.5){return;}
+  gLastShot = 0;
+
   var lObjs = [];
   var nObj = parseInt(random(10,30));
   let objRadius = 5+random(-0,3)
