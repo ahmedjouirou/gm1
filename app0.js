@@ -354,7 +354,8 @@ function draw() {
 
 
 
-function mousePressed() {
+//function mousePressed() {
+function touchStarted() {
   var lObjs = [];
   var nObj = parseInt(random(10,30));
   let objRadius = 5+random(-0,3)
