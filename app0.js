@@ -173,6 +173,10 @@ function draw() {
   background(51);
 
   fill(color(255,255,0));textAlign(LEFT, TOP);
+  textSize(20)
+  text("B:001",20,10);
+
+  fill(color(255,255,0));textAlign(LEFT, TOP);
   textSize(40)
   //text(frameRate().toFixed(0),20,20);
   text(gScore,20,60);
