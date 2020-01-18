@@ -17,6 +17,7 @@ var gColors = [];
 var gScore = 0;
 var gEmpty_fails = 0;
 
+var gShooter_dir = 0;
 function hslToRgb(h, s, l){
     var r, g, b;
 
@@ -68,7 +69,15 @@ function setup() {
 
   // create two boxes and a ground
   lBods = [];
-  lBods.push( Bodies.rectangle(width/2, 40, 30, 30  , {isStatic:true, user_meta:{color:color(255,255,0)}}) );
+  lBods.push( Bodies.rectangle(width/2, 40, 30, 30  , {friction:0,isStatic:false, user_meta:{color:color(255,255,0)},oo:"shooter"}) );
+
+  lBods.push( Bodies.rectangle(400, 50, 810, 10, {
+    isStatic: true,
+    friction:0,
+    user_meta:{color:50},
+    oo:"shooter_floor"
+  }));
+
 
   //lBods.push( Bodies.rectangle(400, 200, 80, 80 , {user_meta:{color:255}}) );
   //lBods.push( Bodies.rectangle(450, 250, 80, 80  , {user_meta:{color:255}}) );
@@ -125,6 +134,7 @@ function spawn_bucket(){
   //World.remove(engine.world, m[0]);
   let Ofs_x = 40;//40 + parseInt(random(0,100));
   let Wid = 60 + parseInt(random(0,50));
+  Wid = 80;
   let buckspeed = 1.8+random(0,2.5);
   let buckcolor = color(255,255,255,40)
   let cont_H  = Bodies.rectangle(Ofs_x   , 450, Wid, 20  , {isStatic:false, user_meta:{color:255}});
@@ -147,13 +157,45 @@ function draw() {
   fill(color(255,255,0));textAlign(LEFT, TOP);
   textSize(40)
   //text(frameRate().toFixed(0),20,20);
-  text(gScore,20,20);
+  text(gScore,20,60);
   fill(color(255,0,0));textAlign(LEFT, TOP);
-  text(gEmpty_fails,20,60);
+  //text(gEmpty_fails,20,160);
 
+
+
+  push();
+  stroke(255);
+  for(var i=0;i<3;i++){
+    fill(color(255,255,255,40));
+    rect(20+(i*40),100, 30,30);  
+  }
+  for(var i=0;i<gEmpty_fails;i++){
+    fill(color(255,0,0,255));
+    rect(20+(i*40),100, 30,30);  
+  }
+  pop();
 
   var bodies = Composite.allBodies(engine.world);
 
+  //Move shooter
+  var lshooter = bodies.filter((v,i,a)=>v.oo=="shooter")[0];
+  if(lshooter.position.x >= (width/2)+100){
+   gShooter_dir = 0 
+  }
+  else if(lshooter.position.x <= (width/2)-100){
+    gShooter_dir = 1
+  }
+
+  if(gScore < 30){
+    gShooter_dir = -1
+  }
+  if(gShooter_dir == 0){
+    Matter.Body.setVelocity(lshooter,  {x: -1.8, y: 0})
+  }
+  else if(gShooter_dir == 1){
+    Matter.Body.setVelocity(lshooter,  {x: +1.8, y: 0})
+  }
+  
 
   bodies.filter((v,i,a)=>v.position.x > width || v.position.y > height).forEach(function(e){ 
     if(e.oo == "bucket" && e.user_meta.ncandies == 0){
@@ -197,7 +239,7 @@ function draw() {
       push();
       fill(color(255,255,0));textAlign(LEFT, TOP);
       textSize(20)
-      text(pB.user_meta.ncandies,pB.position.x,pB.position.y-100);
+      //text(pB.user_meta.ncandies,pB.position.x,pB.position.y-100);
       pop();
     }
   });
@@ -211,6 +253,9 @@ function draw() {
     if(e.user_meta.used != true){
       e.user_meta.used = true;
       gScore += e.user_meta.ncandies;
+      if(e.user_meta.retry != null){
+        //gEmpty_fails = max(0,gEmpty_fails-1);
+      }
     }   
   });
   
@@ -230,6 +275,9 @@ function draw() {
         && candies[j].position.y <= cont_y+cont_h){
           candies[j].user_meta.used = true;
           buckets[i].user_meta.ncandies +=1;
+          if(candies[j].user_meta.candt != null){
+            buckets[i].user_meta.retry = true;
+          }
         }
       }
 
@@ -291,19 +339,23 @@ function mousePressed() {
   nObj = nObj / (2*objRadius/5);
   nObj = parseInt(nObj);
   var lCand_Speed = {}
-
+  var lCanT;
   if(random() <= 0.1){
     objRadius = 20;
     nObj = 1;
     lCand_Speed = {x: 0.000, y: 0.01}
+    lCanT = 10;
   }
   else{
     lCand_Speed = {x: 0.000, y: 0.003}
+    lCandT = null
   }
 
+  var shoooter_pos = Composite.allBodies(engine.world).filter((v,i,a)=>v.oo=="shooter")[0].position
+  var xpos = shoooter_pos.x + random(-15,15);
   for(var i=0;i<nObj;i++){
     //lObjs.push( Bodies.circle(width/2 + random(-18,18), 90+ random(-30,30), 5+random(-0,0)  , {restitution:0.0,user_meta:{color:random(gColors)}}) );  
-    lObjs.push( Bodies.circle(width/2 + random(-15,15), 90+ random(-25,25), objRadius  , {restitution:0.0,oo:"candy",user_meta:{color:hslToRgb(random(0,1),1,0.5)}}) );  
+    lObjs.push( Bodies.circle(xpos, shoooter_pos.y+30+ random(-0,25), objRadius  , {restitution:0.0,oo:"candy",user_meta:{color:hslToRgb(random(0,1),1,0.5),candt:lCanT}}) );  
   }
 
   lObjs.forEach(function(e){
