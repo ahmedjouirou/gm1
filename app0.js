@@ -18,7 +18,13 @@ var gScore = 0;
 var gEmpty_fails = 0;
 
 var gShooter_dir = 0;
-function hslToRgb(h, s, l){
+
+var g_floor_y = 500;
+
+var fks = []
+var gravity;
+
+function hslToRgb(h, s, l, alpha){
     var r, g, b;
 
     if(s == 0){
@@ -41,7 +47,13 @@ function hslToRgb(h, s, l){
     }
 
     var ret_val = [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-    return color(ret_val[0],ret_val[1],ret_val[2]);
+    if(alpha == null){
+      return color(ret_val[0],ret_val[1],ret_val[2]);  
+    }
+    else{
+      return color(ret_val[0],ret_val[1],ret_val[2],alpha);
+    }
+    
 }  
 
 
@@ -54,6 +66,7 @@ function setup() {
   // create an engine
   engine = Engine.create();
 
+  gravity = createVector(0, -0.1);
 
   gColors = [
     color(255,0,0),
@@ -81,7 +94,7 @@ function setup() {
 
   //lBods.push( Bodies.rectangle(400, 200, 80, 80 , {user_meta:{color:255}}) );
   //lBods.push( Bodies.rectangle(450, 250, 80, 80  , {user_meta:{color:255}}) );
-  lBods.push( Bodies.rectangle(400, 500, 810, 60, {
+  lBods.push( Bodies.rectangle(400, g_floor_y, 810, 60, {
     isStatic: true,
     friction:0,
     user_meta:{color:127},
@@ -113,11 +126,13 @@ function setup() {
       
 
       if(bodyA.oo == "candy" && bodyB.oo == "floor") {
-        //console.log(bodyA.oo, bodyB.oo) 
+        //console.log(bodyA.oo, bodyB.oo)
+        fks.push( new Firework(bodyA.position.x, bodyA.position.y) ); 
         World.remove(engine.world, bodyA);
       }
       else if(bodyB.oo == "candy" && bodyA.oo == "floor") {
         //console.log(bodyA.oo, bodyB.oo) 
+        fks.push( new Firework(bodyB.position.x, bodyB.position.y) );
         World.remove(engine.world, bodyB);
         //////gScore -= 1;
       }
@@ -135,17 +150,20 @@ function spawn_bucket(){
   let Ofs_x = 40;//40 + parseInt(random(0,100));
   let Wid = 60 + parseInt(random(0,50));
   Wid = 80;
-  let buckspeed = 1.8+random(0,2.5);
-  let buckcolor = color(255,255,255,40)
-  let cont_H  = Bodies.rectangle(Ofs_x   , 450, Wid, 20  , {isStatic:false, user_meta:{color:255}});
-  let cont_V1 = Bodies.rectangle(Ofs_x+(Wid/2)-(10/2), 450-(100/2)+(20/2), 10, 100  , {isStatic:false, user_meta:{color:255}});
-  let cont_V2 = Bodies.rectangle(Ofs_x-(Wid/2)+(10/2), 450-(100/2)+(20/2), 10, 100  , {isStatic:false, user_meta:{color:255}});
+  let buckspeed = 2.3+random(0,1.5);
+  let buckcolor = color(255,255,255,40);
+  buckcolor = hslToRgb(random(0,1),1,0.5,40);
+  let cont_H  = Bodies.rectangle(Ofs_x   , (g_floor_y-50), Wid, 20  , {isStatic:false, user_meta:{color:255}});
+  let cont_V1 = Bodies.rectangle(Ofs_x+(Wid/2)-(10/2), (g_floor_y-50)-(100/2)+(20/2), 10, 100  , {isStatic:false, user_meta:{color:255}});
+  let cont_V2 = Bodies.rectangle(Ofs_x-(Wid/2)+(10/2), (g_floor_y-50)-(100/2)+(20/2), 10, 100  , {isStatic:false, user_meta:{color:255}});
   let xbody = Matter.Body.create({parts: [cont_H, cont_V1, cont_V2], user_meta:{color:buckcolor, w:Wid,ncandies: 0}, friction:0,oo:"bucket", buckspeed:buckspeed});
 
   //let cont_Hw  = Bodies.rectangle(Ofs_x   , 450-10, Wid-(20), 5  , {isStatic:false, user_meta:{color:255},oo:"bucket_low"});
   World.add(engine.world, xbody);
   //World.add(engine.world, cont_Hw);
 }
+
+
 
 // Using p5 to render
 function draw() {
@@ -161,7 +179,14 @@ function draw() {
   fill(color(255,0,0));textAlign(LEFT, TOP);
   //text(gEmpty_fails,20,160);
 
-
+  push();
+  for (var i = fks.length-1; i >= 0; i--) {
+    fks[i].update();
+    fks[i].show();
+    if (fks[i].done())
+      fks.splice(i, 1);
+  }
+  pop()
 
   push();
   stroke(255);
@@ -186,9 +211,7 @@ function draw() {
     gShooter_dir = 1
   }
 
-  if(gScore < 30){
-    gShooter_dir = -1
-  }
+  gShooter_dir = -1
   if(gShooter_dir == 0){
     Matter.Body.setVelocity(lshooter,  {x: -1.8, y: 0})
   }
@@ -196,8 +219,7 @@ function draw() {
     Matter.Body.setVelocity(lshooter,  {x: +1.8, y: 0})
   }
   
-
-  bodies.filter((v,i,a)=>v.position.x > width || v.position.y > height).forEach(function(e){ 
+  bodies.filter((v,i,a)=>v.position.x > width || v.position.y > g_floor_y+20).forEach(function(e){ 
     if(e.oo == "bucket" && e.user_meta.ncandies == 0){
       gEmpty_fails += 1;
       if(gEmpty_fails >=3){
@@ -259,7 +281,7 @@ function draw() {
     }   
   });
   
-  if(candies.length != 0 && candies.filter((v,i,a)=>v.position.y<= 378).length == 0){
+  if(candies.length != 0 && candies.filter((v,i,a)=>v.position.y<= (g_floor_y-100)).length == 0){
 
     for(var i=0;i<buckets.length; i++){
       var cont_x = buckets[i].position.x-(buckets[i].user_meta.w/2)+5;
@@ -365,4 +387,108 @@ function mousePressed() {
   });
 
   //gScore += nObj;
+  
+}
+
+
+
+function Firework(x,y) {
+  this.hu = random(255);
+  this.firework = new Particle(x,y, this.hu, true);
+  this.exploded = false;
+  this.particles = [];
+  
+  
+  this.done = function() {
+    if (this.exploded && this.particles.length === 0){
+  return true;
+  }else {
+    return false;
+  }
+  }
+  this.update = function() { //firstUpdate
+    if (!this.exploded) {
+      /*
+      this.firework.applyForce(gravity);
+      this.firework.update();
+      if (this.firework.vel.y >= 0) {
+        this.exploded = true;
+        this.explode();
+      }
+      */
+      this.exploded = true;
+        this.explode();
+    }
+ for (var i = this.particles.length-1; i >= 0; i--) {
+      this.particles[i].applyForce(gravity);
+      this.particles[i].update();
+   if (this.particles[i].done()){
+     this.particles.splice(i, 1);
+   }
+    }
+  }
+  
+  this.explode = function() {
+    for (var i = 0; i < 50; i++) {
+      var p = new Particle(this.firework.pos.x, this.firework.pos.y, this.hu, false);
+      this.particles.push(p);
+    }     
+  }
+  this.show = function() {
+    if (!this.exploded) {
+      this.firework.show();
+    }
+    for (var i = this.particles.length-1; i >= 0; i--) {
+      this.particles[i].show();
+    }
+  }
+}
+
+function Particle(x, y, hu, firework) {
+    this.pos = createVector(x, y);
+    this.firework = firework;
+    this.lifespan = 80;
+    this.hu = hu;
+
+  if (this.firework){
+   this.vel = createVector(0, random(-12, -8));
+ }else {
+   this.vel = p5.Vector.random2D();
+   this.vel.mult(random(2, 10));
+ }
+  
+  this.acc = createVector(0, 0);
+ 
+  this.applyForce = function(force) {
+    this.acc.add(force);
+  }
+
+  this.update = function() { //second update
+    if (!this.firework) {
+      this.vel.mult(0.9);
+      this.lifespan -= 4;
+    }
+    this.vel.add(this.acc);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
+  }
+  this.done = function(){
+    if(this.lifespan < 0){
+      return true;
+    }else {
+      return false;
+    }
+  }
+  this.show = function() {
+   colorMode(HSB);
+    if (!this.firework) {
+     strokeWeight(2);
+     stroke(hu, 255, 255, this.lifespan);
+   }else {
+     strokeWeight(4);
+     stroke(hu, 255, 255);
+   }
+    point(this.pos.x, this.pos.y);
+   
+  }
 }
