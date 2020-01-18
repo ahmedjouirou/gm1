@@ -47,7 +47,8 @@ function hslToRgb(h, s, l){
 
 function setup() {
   //createCanvas(800, 600);
-  createCanvas(600, 1200);
+  //createCanvas(600, 1200);
+  createCanvas(windowWidth, windowHeight);
 
   // create an engine
   engine = Engine.create();
