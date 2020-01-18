@@ -125,7 +125,7 @@ function spawn_bucket(){
   //World.remove(engine.world, m[0]);
   let Ofs_x = 40;//40 + parseInt(random(0,100));
   let Wid = 60 + parseInt(random(0,50));
-  let buckspeed = 1.5+random(0,2.5);
+  let buckspeed = 3.5+random(0,2.5);
   let buckcolor = color(255,255,255,40)
   let cont_H  = Bodies.rectangle(Ofs_x   , 450, Wid, 20  , {isStatic:false, user_meta:{color:255}});
   let cont_V1 = Bodies.rectangle(Ofs_x+(Wid/2)-(10/2), 450-(100/2)+(20/2), 10, 100  , {isStatic:false, user_meta:{color:255}});
